@@ -40,11 +40,11 @@ L’aplicació ha estat publicada a:
 ## 📁 Estructura del projecte
 
 - `app.py`: codi principal de l’app amb pestanyes temàtiques.
-- `hotel_bookings.csv`: dataset d’entrada.
-- `recursos/`: storyboard, guió del vídeo i materials visuals.
+- `utils.py`: funcions auxiliars per a gràfics.
+- `hotel_bookings.csv`: dataset original.
 - `output/`: fitxers finals i enllaç públic.
 
-## 📦 Llibreries usades
+## 📦 Llibreries usades (requirements.txt)
 
 - `pandas`
 - `plotly`
