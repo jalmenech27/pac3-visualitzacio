@@ -32,7 +32,7 @@ Responsables de revenue management i gestors hotelers que busquen optimitzar pol
 `shiny run --reload app.py`
 
 
-## 🌍 Publicació a shinyapps.io
+## 🌍 Publicació a [shinyapps.io](https://www.shinyapps.io)
 
 L’aplicació ha estat publicada a:
 ➡️ [https://jalmenech27.shinyapps.io/pac3-visualitzacio](https://jalmenech27.shinyapps.io/pac3-visualitzacio)
@@ -44,7 +44,7 @@ L’aplicació ha estat publicada a:
 - `hotel_bookings.csv`: dataset original.
 - `output/`: fitxers finals i enllaç públic.
 
-## 📦 Llibreries usades (requirements.txt)
+## 📦 Llibreries usades ([requirements.txt](https://github.com/jalmenech27/pac3-visualitzacio/blob/main/requirements.txt))
 
 - `pandas`
 - `plotly`
@@ -53,5 +53,5 @@ L’aplicació ha estat publicada a:
 
 ## ✍️ Autoria
 
-Creat per @jalmenech27 en el marc de la PAC3 Visualització de Dades – UOC.
+Creat per [@jalmenech27](https://github.com/jalmenech27/) en el marc de la PAC3 Visualització de Dades – UOC.
 
