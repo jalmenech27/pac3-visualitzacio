@@ -141,18 +141,18 @@ def sankey_flow(df):
 # ── 4. Interfície d’usuari ───────────────────────────────────
 app_ui = ui.page_fluid(
     ui.h2("Dashboard Cancel·lacions Hotel·leres"),
-    ui.navset_tab_card(
-        ui.nav_panel("Plantejament",  ui.output_plotly("p_problem")),
-        ui.nav_panel("Temporalitat",  ui.output_plotly("p_temp")),
-        ui.nav_panel("Lead Time",     ui.output_plotly("p_lead")),
-        ui.nav_panel("Canals",        ui.output_plotly("p_chan")),
-        ui.nav_panel("Clientela",     ui.output_plotly("p_client")),
+    ui.navset_tab(
+        ui.nav_panel("Plantejament",  ui.output_plot("p_problem")),
+        ui.nav_panel("Temporalitat",  ui.output_plot("p_temp")),
+        ui.nav_panel("Lead Time",     ui.output_plot("p_lead")),
+        ui.nav_panel("Canals",        ui.output_plot("p_chan")),
+        ui.nav_panel("Clientela",     ui.output_plot("p_client")),
         ui.nav_panel("Polítiques", 
             ui.row(
-                ui.column(6, ui.output_plotly("p_dep")),
-                ui.column(6, ui.output_plotly("p_flex"))
+                ui.column(6, ui.output_plot("p_dep")),
+                ui.column(6, ui.output_plot("p_flex"))
             )),
-        ui.nav_panel("Flux", ui.output_plotly("p_flow")),
+        ui.nav_panel("Flux", ui.output_plot("p_flow")),
         ui.nav_panel("Recomanacions",
             ui.tags.ul(
                 ui.tags.li("💳 Implantar dipòsits als segments de risc."),
@@ -167,37 +167,37 @@ app_ui = ui.page_fluid(
 def server(input, output, session):
 
     @output
-    @render.plotly
+    @render.plot
     def p_problem():   return plot_problem(bookings())
 
     @output
-    @render.plotly
+    @render.plot
     def p_temp():      return plot_temporal(bookings())
 
     @output
-    @render.plotly
+    @render.plot
     def p_lead():      return plot_lead_time(bookings())
 
     @output
-    @render.plotly
+    @render.plot
     def p_chan():      return plot_channels(bookings())
 
     @output
-    @render.plotly
+    @render.plot
     def p_client():    return plot_client_types(bookings())
 
     @output
-    @render.plotly
+    @render.plot
     def p_dep():       
         f1, _ = plot_policies(bookings()); return f1
 
     @output
-    @render.plotly
+    @render.plot
     def p_flex():      
         _, f2 = plot_policies(bookings()); return f2
 
     @output
-    @render.plotly
+    @render.plot
     def p_flow():      return sankey_flow(bookings())
 
 
