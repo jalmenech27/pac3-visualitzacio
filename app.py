@@ -179,7 +179,7 @@ with tabs[1]:
 
 with tabs[2]:
     st.subheader("Lead Time vs Cancel·lació")
-    st.plotly_chart(plot_lead_time(df), use_container_width=True)
+    st.plotly_chart(plot_bubble_anim(df), use_container_width=True)
 
 with tabs[3]:
     st.subheader("Canals de reserva")
