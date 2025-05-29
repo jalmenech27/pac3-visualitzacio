@@ -165,7 +165,7 @@ def sankey_flow(df):
 # ── 3. Interfície Streamlit (amb pestanyes) ─────────────────
 st.title("Dashboard Storytelling · Cancel·lacions Hotel·leres (PAC3)")
 tabs = st.tabs([
-    "Plantejament", "Temporalitat", "Lead Time", "Canals",
+    "Plantejament", "Temporalitat", "Evolució", "Canals",
     "Clientela", "Polítiques", "Flux", "Recomanacions"
 ])
 
