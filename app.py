@@ -140,6 +140,7 @@ def plot_bubble_anim(df):
 # -------- Layout Dash --------
 
 app = dash.Dash(__name__)
+server = app.server
 
 app.layout = html.Div([
     html.H2("Dashboard Cancel·lacions Hotel·leres (PAC3)"),
