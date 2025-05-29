@@ -57,9 +57,49 @@ def plot_temporal(df):
     fig.update_yaxes(tickformat=".0%")
     return fig
 
-def plot_lead_time(df):
-    fig = px.box(df, x="is_canceled_lbl", y="lead_time", points="all",
-                 color="is_canceled_lbl", title="Lead Time · Distribució")
+def plot_bubble_anim(df):
+    df = df.copy()
+    df['arrival_date'] = pd.to_datetime(
+        df['arrival_date_year'].astype(str) + '-' +
+        df['arrival_date_month'] + '-' +
+        df['arrival_date_day_of_month'].astype(str)
+    )
+    df['month_year'] = df['arrival_date'].dt.to_period('M').astype(str)
+
+    bubble_df = df.groupby(['month_year', 'distribution_channel', 'hotel']).agg({
+        'is_canceled': 'mean',
+        'lead_time': 'mean',
+        'adr': 'mean',
+        'hotel': 'count'
+    }).rename(columns={'hotel': 'num_reserves'}).reset_index()
+
+    bubble_df['is_canceled'] *= 100
+
+    fig = px.scatter(
+        bubble_df,
+        x='is_canceled',
+        y='lead_time',
+        size='num_reserves',
+        color='hotel',
+        animation_frame='month_year',
+        animation_group='distribution_channel',
+        hover_name='distribution_channel',
+        size_max=60,
+        range_x=[0, bubble_df['is_canceled'].max() + 5],
+        range_y=[0, bubble_df['lead_time'].max() + 20],
+        labels={
+            'is_canceled': '% Cancel·lació',
+            'lead_time': 'Lead time mitjà (dies)',
+            'num_reserves': 'Nombre de reserves',
+            'hotel': "Tipus d'hotel"
+        },
+        title='Evolució de Cancel·lacions per Canal al llarg del Temps (Bubble Chart)'
+    )
+
+    fig.update_layout(
+        transition={'duration': 1000},
+        legend_title="Tipus d'Hotel"
+    )
     return fig
 
 def plot_channels(df):
