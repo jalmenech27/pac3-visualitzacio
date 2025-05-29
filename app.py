@@ -178,7 +178,7 @@ with tabs[1]:
     st.plotly_chart(plot_temporal(df), use_container_width=True)
 
 with tabs[2]:
-    st.subheader("Lead Time vs Cancel·lació")
+    st.subheader("Evolució de Cancel·lacions per Canal al llarg del Temps (Bubble Chart)")
     st.plotly_chart(plot_bubble_anim(df), use_container_width=True)
 
 with tabs[3]:
