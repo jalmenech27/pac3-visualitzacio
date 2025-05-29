@@ -1,29 +1,23 @@
 ###############################################################
 #  PAC3 – Dashboard Storytelling “Hotel Bookings Cancellations”
-#  ────────────────────────────────────────────────────────────
-#  Llibreria central: shiny (for python)  |  Gràfics: plotly
+#  Versió Streamlit (per a Streamlit Cloud)
 #  Autor: Jordi Almiñana Domènech
 #  Data: 2025-05-30
 ###############################################################
 
-# ── 1. Imports ───────────────────────────────────────────────
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
 
-from shiny import App, ui, render, reactive
-from pathlib import Path
+st.set_page_config(page_title="PAC3: Cancel·lacions Hotel·leres", layout="wide")
 
-# ── 2. Carrega i pre-processat de dades ──────────────────────
-ROOT = Path(__file__).parent
-CSV  = ROOT / "hotel_bookings.csv"
-
-@reactive.Calc
-def bookings() -> pd.DataFrame:
-    """Lectura i pre-processat equivalent al .Rmd original."""
+# ── 1. Carrega i pre-processat de dades ──────────────────────
+@st.cache_data
+def load_data():
     df = (
-        pd.read_csv(CSV)
+        pd.read_csv("hotel_bookings.csv")
           # dates
           .assign(arrival_date = 
                   lambda d: pd.to_datetime(
@@ -32,15 +26,14 @@ def bookings() -> pd.DataFrame:
                       d.arrival_date_day_of_month.astype(str),
                       format="%Y-%B-%d"))
     )
-
-    # variables d’interès agregades
     df["total_nights"] = df.stays_in_week_nights + df.stays_in_weekend_nights
     df["is_canceled_lbl"] = df.is_canceled.replace({0:"Confirmada", 1:"Cancel·lada"})
-    df["market_segment"]  = df.market_segment.str.replace("Complementary", "Compl.")  # breu
+    df["market_segment"]  = df.market_segment.str.replace("Complementary", "Compl.")
     return df
 
+df = load_data()
 
-# ── 3. Funcions gràfiques reutilitzables ─────────────────────
+# ── 2. Funcions gràfiques ───────────────────────────────────
 def plot_problem(df):
     data = df.groupby("hotel")["is_canceled"].agg(
         pct_cancel = "mean", n = "size").reset_index()
@@ -51,7 +44,6 @@ def plot_problem(df):
     fig.update_traces(textposition="outside")
     fig.update_yaxes(tickformat=".0%")
     return fig
-
 
 def plot_temporal(df):
     data = (
@@ -65,12 +57,10 @@ def plot_temporal(df):
     fig.update_yaxes(tickformat=".0%")
     return fig
 
-
 def plot_lead_time(df):
     fig = px.box(df, x="is_canceled_lbl", y="lead_time", points="all",
                  color="is_canceled_lbl", title="Lead Time · Distribució")
     return fig
-
 
 def plot_channels(df):
     data = (
@@ -87,7 +77,6 @@ def plot_channels(df):
     fig.update_yaxes(tickformat=".0%")
     return fig
 
-
 def plot_client_types(df):
     data = df.groupby("customer_type")["is_canceled"].mean().reset_index()
     fig = px.bar(data, x="customer_type", y="is_canceled",
@@ -96,9 +85,7 @@ def plot_client_types(df):
     fig.update_yaxes(tickformat=".0%")
     return fig
 
-
 def plot_policies(df):
-    """Dipòsit vs flexibilitat."""
     # Dipòsit
     dep = df.groupby("deposit_type")["is_canceled"].mean().reset_index()
     fig1 = px.pie(dep, names="deposit_type", values="is_canceled",
@@ -113,9 +100,7 @@ def plot_policies(df):
     fig2.update_traces(textposition='inside', texttemplate='%{value:.1%}')
     return fig1, fig2
 
-
 def sankey_flow(df):
-    """Segment → Canal → Cancel·lació (Sankey)."""
     g = (df.groupby(["market_segment","distribution_channel","is_canceled_lbl"])
             .size().reset_index(name="count"))
     src_lv1 = g.market_segment
@@ -137,70 +122,54 @@ def sankey_flow(df):
     fig.update_layout(title="Flux de reserves")
     return fig
 
+# ── 3. Interfície Streamlit (amb pestanyes) ─────────────────
+st.title("Dashboard Storytelling · Cancel·lacions Hotel·leres (PAC3)")
+tabs = st.tabs([
+    "Plantejament", "Temporalitat", "Lead Time", "Canals",
+    "Clientela", "Polítiques", "Flux", "Recomanacions"
+])
 
-# ── 4. Interfície d’usuari ───────────────────────────────────
-app_ui = ui.page_fluid(
-    ui.h2("Dashboard Cancel·lacions Hotel·leres"),
-    ui.navset_tab(
-        ui.nav_panel("Plantejament",  ui.output_plot("p_problem")),
-        ui.nav_panel("Temporalitat",  ui.output_plot("p_temp")),
-        ui.nav_panel("Lead Time",     ui.output_plot("p_lead")),
-        ui.nav_panel("Canals",        ui.output_plot("p_chan")),
-        ui.nav_panel("Clientela",     ui.output_plot("p_client")),
-        ui.nav_panel("Polítiques", 
-            ui.row(
-                ui.column(6, ui.output_plot("p_dep")),
-                ui.column(6, ui.output_plot("p_flex"))
-            )),
-        ui.nav_panel("Flux", ui.output_plot("p_flow")),
-        ui.nav_panel("Recomanacions",
-            ui.tags.ul(
-                ui.tags.li("💳 Implantar dipòsits als segments de risc."),
-                ui.tags.li("🔄 Oferir canvis flexibles per reduir cancel·lacions."),
-                ui.tags.li("🌐 Potenciar canals directes amb incentius."),
-                ui.tags.li("📈 Overbooking calculat a temporada alta.")
-            ))
-    )
-)
+with tabs[0]:
+    st.subheader("Plantejament del problema")
+    st.plotly_chart(plot_problem(df), use_container_width=True)
 
-# ── 5. Lògica reactiva / server ─────────────────────────────
-def server(input, output, session):
+with tabs[1]:
+    st.subheader("Temporalitat de les cancel·lacions")
+    st.plotly_chart(plot_temporal(df), use_container_width=True)
 
-    @output
-    @render.plot
-    def p_problem():   return plot_problem(bookings())
+with tabs[2]:
+    st.subheader("Lead Time vs Cancel·lació")
+    st.plotly_chart(plot_lead_time(df), use_container_width=True)
 
-    @output
-    @render.plot
-    def p_temp():      return plot_temporal(bookings())
+with tabs[3]:
+    st.subheader("Canals de reserva")
+    st.plotly_chart(plot_channels(df), use_container_width=True)
 
-    @output
-    @render.plot
-    def p_lead():      return plot_lead_time(bookings())
+with tabs[4]:
+    st.subheader("Tipus de client")
+    st.plotly_chart(plot_client_types(df), use_container_width=True)
 
-    @output
-    @render.plot
-    def p_chan():      return plot_channels(bookings())
+with tabs[5]:
+    st.subheader("Polítiques i flexibilitat")
+    col1, col2 = st.columns(2)
+    fig1, fig2 = plot_policies(df)
+    with col1:
+        st.plotly_chart(fig1, use_container_width=True)
+    with col2:
+        st.plotly_chart(fig2, use_container_width=True)
 
-    @output
-    @render.plot
-    def p_client():    return plot_client_types(bookings())
+with tabs[6]:
+    st.subheader("Flux de reserves (Sankey)")
+    st.plotly_chart(sankey_flow(df), use_container_width=True)
 
-    @output
-    @render.plot
-    def p_dep():       
-        f1, _ = plot_policies(bookings()); return f1
+with tabs[7]:
+    st.subheader("Recomanacions finals")
+    st.markdown("""
+    - 💳 **Implantar dipòsits als segments de risc.**
+    - 🔄 **Oferir canvis flexibles per reduir cancel·lacions.**
+    - 🌐 **Potenciar canals directes amb incentius.**
+    - 📈 **Overbooking calculat a temporada alta.**
+    """)
 
-    @output
-    @render.plot
-    def p_flex():      
-        _, f2 = plot_policies(bookings()); return f2
-
-    @output
-    @render.plot
-    def p_flow():      return sankey_flow(bookings())
-
-
-# ── 6. Objecte Shiny App ────────────────────────────────────
-app = App(app_ui, server)
-
+st.markdown("---")
+st.caption("Autor: Jordi Almiñana Domènech | PAC3 · UOC · 2025")
