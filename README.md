@@ -38,13 +38,21 @@ La versió Dash es troba a la carpeta dash/. El branch específic de Dash està 
 ## 📁 Estructura del projecte
 
 ├── app_tabs.py          # Codi principal de l’app Streamlit versió pestanyes
+
 ├── app_pages.py         # Codi principal de l’app Streamlit versió pàgina sencera
+
 ├── hotel_bookings.csv   # Dataset original
+
 ├── requirements.txt     # Llibreries per a Streamlit
+
 ├── dash/                # Versió alternativa en Dash
+
 │   ├── app_pages.py     # Dash layout amb pages
+
 │   ├── app_tabs.py      # Dash layout amb tabs
+
 │   └── requirements.txt # Llibreries per a Dash
+
 └── README.md
 
 
@@ -53,9 +61,9 @@ La versió Dash es troba a la carpeta dash/. El branch específic de Dash està 
 
 L’aplicació ha estat publicada a:
 - Versió "pestanyes (tabs)":
-➡️ [https://jalmenech27.shinyapps.io/pac3-visualitzacio](https://pac3-visualitzacio-tabs.streamlit.app)
+➡️ https://pac3-visualitzacio-tabs.streamlit.app
 - Versió "pàgina sencera (pages)":
-https://pac3-visualitzacio-pages.streamlit.app
+➡️ https://pac3-visualitzacio-pages.streamlit.app
 
 
 ## 📦 Llibreries usades ([requirements.txt](https://github.com/jalmenech27/pac3-visualitzacio/blob/main/requirements.txt))
