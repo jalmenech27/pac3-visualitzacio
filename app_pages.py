@@ -240,6 +240,18 @@ def plot_channel_evol(df: pd.DataFrame):
         title="Evolució de ADR i % cancel·lacions per canal",
         height=550,
     )
+    
+    tots_canals = df["distribution_channel"].unique()
+    existents = {trace.name for trace in fig.data}
+    for canal in tots_canals:
+        if canal not in existents:
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None],
+                mode="markers",
+                marker=dict(size=0),
+                name=canal,
+                showlegend=True
+            ))
 
     fig.update_layout(
         transition={"duration": 1000},
