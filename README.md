@@ -37,23 +37,27 @@ La versió Dash es troba a la carpeta dash/. El branch específic de Dash està 
 
 ## 📁 Estructura del projecte
 
-├── app_tabs.py          # Codi principal de l’app Streamlit versió pestanyes
+- **app_tabs.py**  
+  Codi principal de l’app Streamlit (versió pestanyes)
 
-├── app_pages.py         # Codi principal de l’app Streamlit versió pàgina sencera
+- **app_pages.py**  
+  Codi principal de l’app Streamlit (versió pàgina sencera)
 
-├── hotel_bookings.csv   # Dataset original
+- **hotel_bookings.csv**  
+  Dataset original
 
-├── requirements.txt     # Llibreries per a Streamlit
+- **requirements.txt**  
+  Llibreries per a Streamlit
 
-├── dash/                # Versió alternativa en Dash
+- **dash/**  
+  Versió alternativa en Dash  
+  ├─ **app_pages.py**  Dash layout amb pages  
+  ├─ **app_tabs.py**   Dash layout amb tabs  
+  └─ **requirements.txt**  Llibreries per a Dash
 
-│   ├── app_pages.py     # Dash layout amb pages
+- **README.md**  
+  Descripció i instruccions
 
-│   ├── app_tabs.py      # Dash layout amb tabs
-
-│   └── requirements.txt # Llibreries per a Dash
-
-└── README.md
 
 
 
