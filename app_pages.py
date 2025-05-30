@@ -230,11 +230,18 @@ def plot_channels(df: pd.DataFrame):
 
 def plot_client_types(df: pd.DataFrame):
     data = df.groupby("customer_type")["is_canceled"].mean().reset_index()
+    color_map = {
+        "Contract": "#636EFA",         # blau
+        "Group": "#00CC96",            # verd
+        "Transient": "#AB63FA",        # lila
+        "Transient-Party": "#19D3F3",  # turquesa
+    }
     fig = px.bar(
         data,
         x="customer_type",
         y="is_canceled",
         color="customer_type",
+        color_discrete_map=color_map,
         labels={"is_canceled": "% cancel·lacions", "customer_type": "Tipus de client"},
         title="Tipus de client · % cancel·lacions",
         text=data.is_canceled.map(lambda x: f"{x:.1%}"),
@@ -246,6 +253,17 @@ def plot_client_types(df: pd.DataFrame):
 
 
 def plot_policies(df: pd.DataFrame):
+    # Paleta comuna
+    color_map_dep = {
+        "No Deposit": "#636EFA",   # blau
+        "Non Refund": "#00CC96",   # verd
+        "Refundable": "#AB63FA",   # lila
+    }
+    color_map_flex = {
+        "Amb canvis": "#636EFA",   # blau
+        "Sense canvis": "#00CC96", # verd
+    }
+
     # Dipòsit
     dep = df.groupby("deposit_type")["is_canceled"].mean().reset_index()
     fig1 = px.bar(
@@ -253,10 +271,12 @@ def plot_policies(df: pd.DataFrame):
         x="deposit_type",
         y="is_canceled",
         color="deposit_type",
+        color_discrete_map=color_map_dep,
         labels={"is_canceled": "% cancel·lacions", "deposit_type": "Tipus dipòsit"},
         title="Política de dipòsit · % cancel·lació",
         text=dep.is_canceled.map(lambda x: f"{x:.1%}"),
     )
+    fig1.update_traces(textposition="outside")
     fig1.update_yaxes(tickformat=".0%", range=[0, 1])
     fig1.update_layout(showlegend=False)
 
@@ -268,15 +288,16 @@ def plot_policies(df: pd.DataFrame):
         x="change",
         y="is_canceled",
         color="change",
+        color_discrete_map=color_map_flex,
         labels={"is_canceled": "% cancel·lacions", "change": "Flexibilitat"},
         title="Flexibilitat · % cancel·lació",
         text=flex.is_canceled.map(lambda x: f"{x:.1%}"),
     )
+    fig2.update_traces(textposition="outside")
     fig2.update_yaxes(tickformat=".0%", range=[0, 1])
     fig2.update_layout(showlegend=False)
 
     return fig1, fig2
-
 
 
 def sankey_flow(df: pd.DataFrame):
