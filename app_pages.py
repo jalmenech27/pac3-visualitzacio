@@ -33,7 +33,6 @@ def load_data():
     df["market_segment"] = df.market_segment.str.replace("Complementary", "Compl.")
     return df
 
-
 df = load_data()
 
 # ─────────────────────────────────────────────────────────────
@@ -75,7 +74,7 @@ def plot_problem(df: pd.DataFrame):
         color="hotel",
         text=data.pct_cancel.map(lambda x: f"{x:.1%}"),
         labels={"pct_cancel": "% cancel·lacions", "hotel": "Tipus d'hotel"},
-        title="Plantejament · % de cancel·lacions per tipus d’hotel",
+        title="Percentatge de cancel·lacions per tipus d’hotel",
     )
     fig.update_traces(textposition="outside")
     fig.update_yaxes(tickformat=".0%", range=[0, 1])
@@ -154,7 +153,7 @@ def plot_temporal_heatmap(df: pd.DataFrame):
         aspect="auto",
         color_continuous_scale="Reds",
         labels=dict(color="% Cancel·lació"),
-        title="Temporalitat · Heatmap mensual del % de cancel·lacions",
+        title="Percentatge de cancel·lacions segons els mesos (Heatmap)",
     )
     fig.update_xaxes(side="top")
     return fig
@@ -193,7 +192,7 @@ def plot_lead_time_hist(df: pd.DataFrame):
             "pct": "% reserves",
             "is_canceled_lbl": "Estat",
         },
-        title="Lead Time · Distribució de cancel·lació segons dies d'antelació",
+        title="Distribució de cancel·lació segons dies d'antelació (Lead Time)",
     )
     fig.update_yaxes(tickformat=".0%", range=[0, 1])
     fig.update_layout(legend_orientation="h", legend_y=-0.25)
@@ -263,7 +262,6 @@ def plot_channel_evol(df: pd.DataFrame):
     return fig
 
 
-
 def plot_client_types(df: pd.DataFrame):
     data = df.groupby("customer_type")["is_canceled"].mean().reset_index()
     color_map = {
@@ -279,7 +277,7 @@ def plot_client_types(df: pd.DataFrame):
         color="customer_type",
         color_discrete_map=color_map,
         labels={"is_canceled": "% cancel·lacions", "customer_type": "Tipus de client"},
-        title="Tipus de client · % cancel·lacions",
+        title="Percentatge de cancel·lacions per tipus de client",
         text=data.is_canceled.map(lambda x: f"{x:.1%}"),
     )
     fig.update_traces(textposition="outside")
@@ -309,7 +307,7 @@ def plot_policies(df: pd.DataFrame):
         color="deposit_type",
         color_discrete_map=color_map_dep,
         labels={"is_canceled": "% cancel·lacions", "deposit_type": "Tipus dipòsit"},
-        title="Política de dipòsit · % cancel·lació",
+        title="Percentatge de cancel·lació per política de dipòsit",
         text=dep.is_canceled.map(lambda x: f"{x:.1%}"),
     )
     fig1.update_traces(textposition="outside")
@@ -326,7 +324,7 @@ def plot_policies(df: pd.DataFrame):
         color="change",
         color_discrete_map=color_map_flex,
         labels={"is_canceled": "% cancel·lacions", "change": "Flexibilitat"},
-        title="Flexibilitat · % cancel·lació",
+        title="Percentatge de cancel·lació segons flexibilitat",
         text=flex.is_canceled.map(lambda x: f"{x:.1%}"),
     )
     fig2.update_traces(textposition="outside")
@@ -367,7 +365,7 @@ def sankey_flow(df: pd.DataFrame):
 # 4. Layout – Pàgina principal
 # ─────────────────────────────────────────────────────────────
 
-st.title("Dashboard Storytelling · Cancel·lacions Hoteleres (PAC3)")
+st.title("Dashboard Storytelling (PAC3): Cancel·lacions Hoteleres")
 
 # 4.1 Plantejament
 st.header("Plantejament del problema")
@@ -388,7 +386,7 @@ st.plotly_chart(plot_temporal_heatmap(df_filt), use_container_width=True)
 st.markdown("---")
 
 # 4.4 Lead Time
-st.header("Lead Time i cancel·lacions")
+st.header("Dies d'anticipació de la reserva (Lead Time) i cancel·lacions")
 st.plotly_chart(plot_lead_time_hist(df_filt), use_container_width=True)
 
 st.markdown("---")
