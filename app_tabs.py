@@ -109,7 +109,7 @@ def plot_bubble_anim(df: pd.DataFrame):
         animation_frame="month_year",
         animation_group="distribution_channel",
         hover_name="distribution_channel",
-        size_max=100,
+        size_max=80,
         range_x=[0, bubble_df["pct_cancel"].max() + 5],
         range_y=[0, bubble_df["lead_time"].max() + 20],
         labels={
@@ -120,6 +120,7 @@ def plot_bubble_anim(df: pd.DataFrame):
         },
         title="Evolució de cancel·lacions per canal al llarg del temps",
         height=550,
+        weight=750,
     )
 
     fig.update_layout(transition={"duration": 1000}, legend_title="Tipus d'hotel")
@@ -229,7 +230,7 @@ def plot_channel_evol(df: pd.DataFrame):
         animation_frame="month_year",
         animation_group="distribution_channel",
         hover_name="distribution_channel",
-        size_max=100,
+        size_max=80,
         range_x=[0, 100],
         range_y=[bubble_df["adr_mean"].min() * 0.9, bubble_df["adr_mean"].max() * 1.1],
         labels={
@@ -240,6 +241,7 @@ def plot_channel_evol(df: pd.DataFrame):
         },
         title="Evolució de ADR i % cancel·lacions per canal",
         height=550,
+        weight=750,
     )
     
     tots_canals = df["distribution_channel"].unique()
