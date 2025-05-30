@@ -234,12 +234,14 @@ def plot_client_types(df: pd.DataFrame):
         data,
         x="customer_type",
         y="is_canceled",
+        color="customer_type",
         labels={"is_canceled": "% cancel·lacions", "customer_type": "Tipus de client"},
         title="Tipus de client · % cancel·lacions",
         text=data.is_canceled.map(lambda x: f"{x:.1%}"),
     )
     fig.update_traces(textposition="outside")
     fig.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig.update_layout(showlegend=False)
     return fig
 
 
@@ -250,26 +252,31 @@ def plot_policies(df: pd.DataFrame):
         dep,
         x="deposit_type",
         y="is_canceled",
+        color="deposit_type",
         labels={"is_canceled": "% cancel·lacions", "deposit_type": "Tipus dipòsit"},
         title="Política de dipòsit · % cancel·lació",
         text=dep.is_canceled.map(lambda x: f"{x:.1%}"),
     )
     fig1.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig1.update_layout(showlegend=False)
 
-    # Flexibilitat (booking_changes>0)
+    # Flexibilitat (booking_changes > 0)
     flex = df.assign(change=np.where(df.booking_changes > 0, "Amb canvis", "Sense canvis"))
     flex = flex.groupby("change")["is_canceled"].mean().reset_index()
     fig2 = px.bar(
         flex,
         x="change",
         y="is_canceled",
+        color="change",
         labels={"is_canceled": "% cancel·lacions", "change": "Flexibilitat"},
         title="Flexibilitat · % cancel·lació",
         text=flex.is_canceled.map(lambda x: f"{x:.1%}"),
     )
     fig2.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig2.update_layout(showlegend=False)
 
     return fig1, fig2
+
 
 
 def sankey_flow(df: pd.DataFrame):
