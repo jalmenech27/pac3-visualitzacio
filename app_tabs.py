@@ -5,104 +5,341 @@
 #  Data: 2025-05-30
 ###############################################################
 
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import streamlit as st
+from datetime import date
 
-st.set_page_config(page_title="PAC3: Cancel·lacions Hotel·leres", layout="wide")
+# ─────────────────────────────────────────────────────────────
+# Configuració general
+# ─────────────────────────────────────────────────────────────
 
-# ── 1. Carrega i pre-processat de dades ──────────────────────
+st.set_page_config(page_title="PAC3: Cancel·lacions hoteleres", layout="wide")
+
+# ─────────────────────────────────────────────────────────────
+# 1. Carrega i preprocessat de dades
+# ─────────────────────────────────────────────────────────────
+
 @st.cache_data
 def load_data():
-    df = (
-        pd.read_csv("hotel_bookings.csv")
-          # dates
-          .assign(arrival_date = 
-                  lambda d: pd.to_datetime(
-                      d.arrival_date_year.astype(str)   + "-" +
-                      d.arrival_date_month              + "-" +
-                      d.arrival_date_day_of_month.astype(str),
-                      format="%Y-%B-%d"))
+    df = pd.read_csv("hotel_bookings.csv")
+    df["arrival_date"] = pd.to_datetime(
+        df.arrival_date_year.astype(str) + "-" +
+        df.arrival_date_month + "-" +
+        df.arrival_date_day_of_month.astype(str),
+        format="%Y-%B-%d"
     )
     df["total_nights"] = df.stays_in_week_nights + df.stays_in_weekend_nights
-    df["is_canceled_lbl"] = df.is_canceled.replace({0:"Confirmada", 1:"Cancel·lada"})
-    df["market_segment"]  = df.market_segment.str.replace("Complementary", "Compl.")
+    df["is_canceled_lbl"] = df.is_canceled.replace({0: "Confirmada", 1: "Cancel·lada"})
+    df["market_segment"] = df.market_segment.str.replace("Complementary", "Compl.")
     return df
 
 df = load_data()
 
-# ── 2. Funcions gràfiques ───────────────────────────────────
-def plot_problem(df):
-    data = df.groupby("hotel")["is_canceled"].agg(
-        pct_cancel = "mean", n = "size").reset_index()
-    fig = px.bar(data, x="hotel", y="pct_cancel",
-                 color="hotel", text=data.pct_cancel.map(lambda x:f"{x:.1%}"),
-                 title="Plantejament · % de cancel·lacions per tipus d’hotel",
-                 labels={"pct_cancel":"% cancel·lacions"})
+# ─────────────────────────────────────────────────────────────
+# 2. Filtres – sidebar
+# ─────────────────────────────────────────────────────────────
+
+st.sidebar.header("Filtres de període temporal")
+min_date = df["arrival_date"].min().date()
+max_date = df["arrival_date"].max().date()
+start_date, end_date = st.sidebar.date_input(
+    "Interval de dates",
+    value=(min_date, max_date),
+    min_value=min_date,
+    max_value=max_date,
+)
+if start_date > end_date:
+    st.sidebar.error("⚠️ La data inicial no pot ser posterior a la final.")
+mask = (
+    (df["arrival_date"].dt.date >= start_date) &
+    (df["arrival_date"].dt.date <= end_date)
+)
+df_filt = df.loc[mask]
+
+# ─────────────────────────────────────────────────────────────
+# 3. Funcions de gràfic
+# ─────────────────────────────────────────────────────────────
+
+def plot_problem(df: pd.DataFrame):
+    data = (
+        df.groupby("hotel")["is_canceled"]
+        .agg(pct_cancel="mean", n="size")
+        .reset_index()
+    )
+    fig = px.bar(
+        data,
+        x="hotel",
+        y="pct_cancel",
+        color="hotel",
+        text=data.pct_cancel.map(lambda x: f"{x:.1%}"),
+        labels={"pct_cancel": "% cancel·lacions", "hotel": "Tipus d'hotel"},
+        title="Percentatge de cancel·lacions per tipus d’hotel",
+    )
     fig.update_traces(textposition="outside")
-    fig.update_yaxes(tickformat=".0%")
+    fig.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig.update_layout(showlegend=False)
     return fig
 
-def plot_temporal(df):
-    data = (
-        df.groupby(df.arrival_date.dt.to_period("M"))["is_canceled"]
-          .mean().reset_index()
-          .assign(arrival_date=lambda d: d.arrival_date.astype(str))
+
+def plot_bubble_anim(df: pd.DataFrame):
+    df = df.copy()
+    df["month_year"] = df["arrival_date"].dt.to_period("M").astype(str)
+
+    bubble_df = (
+        df.groupby(["month_year", "distribution_channel", "hotel"])
+        .agg(
+            pct_cancel=("is_canceled", "mean"),
+            lead_time=("lead_time", "mean"),
+            num_reserves=("is_canceled", "size"),
+        )
+        .reset_index()
     )
-    fig = px.line(data, x="arrival_date", y="is_canceled", markers=True,
-                  title="Temporalitat · Cancel·lacions mensuals",
-                  labels={"is_canceled":"% cancel·lacions", "arrival_date":"Mes"})
-    fig.update_yaxes(tickformat=".0%")
-    return fig
 
-def plot_lead_time(df):
-    fig = px.box(df, x="is_canceled_lbl", y="lead_time", points="all",
-                 color="is_canceled_lbl", title="Lead Time · Distribució")
-    return fig
+    bubble_df["pct_cancel"] *= 100
 
-def plot_channels(df):
-    data = (
-        df.groupby("distribution_channel")
-          .agg(pct_cancel=("is_canceled","mean"),
-               adr_mean=("adr","mean"),
-               n=("is_canceled","size"))
-          .reset_index()
+    fig = px.scatter(
+        bubble_df,
+        x="pct_cancel",
+        y="lead_time",
+        size="num_reserves",
+        color="hotel",
+        animation_frame="month_year",
+        animation_group="distribution_channel",
+        hover_name="distribution_channel",
+        size_max=60,
+        range_x=[0, bubble_df["pct_cancel"].max() + 5],
+        range_y=[0, bubble_df["lead_time"].max() + 20],
+        labels={
+            "pct_cancel": "% Cancel·lació",
+            "lead_time": "Lead time mitjà (dies)",
+            "num_reserves": "# reserves",
+            "hotel": "Tipus d'hotel",
+        },
+        title="Evolució de cancel·lacions per canal al llarg del temps",
+        height=550,
     )
-    fig = px.scatter(data, x="adr_mean", y="pct_cancel", size="n",
-                     color="distribution_channel",
-                     title="Canal de reserva · ADR, volum i % cancel·lació",
-                     labels={"adr_mean":"ADR mitjà", "pct_cancel":"% cancel·lacions"})
-    fig.update_yaxes(tickformat=".0%")
+
+    fig.update_layout(transition={"duration": 1000}, legend_title="Tipus d'hotel")
     return fig
 
-def plot_client_types(df):
+
+def plot_temporal_heatmap(df: pd.DataFrame):
+    tmp = df.copy()
+    tmp["Year"] = tmp.arrival_date.dt.year
+    tmp["Month"] = tmp.arrival_date.dt.month_name().str[:3]
+
+    data = tmp.groupby(["Month", "Year"])["is_canceled"].mean().reset_index()
+    data["pct"] = data["is_canceled"] * 100
+
+    # ordenar mesos
+    months_order = [
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec",
+    ]
+    data["Month"] = pd.Categorical(data["Month"], categories=months_order, ordered=True)
+    data = data.sort_values(["Month", "Year"])
+
+    # USAR pivot_table en comptes de pivot
+    heat_df = data.pivot_table(
+        index="Month",
+        columns="Year",
+        values="pct",
+        aggfunc="mean"
+    )
+
+    fig = px.imshow(
+        heat_df,
+        aspect="auto",
+        color_continuous_scale="Reds",
+        labels=dict(color="% Cancel·lació"),
+        title="Percentatge de cancel·lacions segons els mesos (Heatmap)",
+    )
+    fig.update_xaxes(side="top")
+    return fig
+
+
+def plot_lead_time_hist(df: pd.DataFrame):
+    df2 = df.copy()
+    bins = [0, 30, 60, 90, 120, 150, 180, 999]
+    labels = [
+        "0–30",
+        "31–60",
+        "61–90",
+        "91–120",
+        "121–150",
+        "151–180",
+        "180+",
+    ]
+    df2["lead_time_cat"] = pd.cut(df2["lead_time"], bins=bins, labels=labels, right=False)
+
+    hist = (
+        df2.groupby(["lead_time_cat", "is_canceled_lbl"]).size().reset_index(name="count")
+    )
+
+    # percentatge dins de cada categoria
+    hist["pct"] = hist["count"] / hist.groupby("lead_time_cat")["count"].transform("sum")
+
+    fig = px.bar(
+        hist,
+        x="lead_time_cat",
+        y="pct",
+        color="is_canceled_lbl",
+        barmode="stack",
+        text=hist["pct"].map(lambda x: f"{x:.0%}"),
+        labels={
+            "lead_time_cat": "Dies d'antelació",
+            "pct": "% reserves",
+            "is_canceled_lbl": "Estat",
+        },
+        title="Distribució de cancel·lació segons dies d'antelació (Lead Time)",
+    )
+    fig.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig.update_layout(legend_orientation="h", legend_y=-0.25)
+    return fig
+
+
+def plot_channel_evol(df: pd.DataFrame):
+    # Preparem les dades amb evolució temporal per mes
+    df_tmp = df.copy()
+    df_tmp["month_year"] = df_tmp["arrival_date"].dt.to_period("M").astype(str)
+
+    bubble_df = (
+        df_tmp
+        .groupby(["month_year", "distribution_channel"])
+        .agg(
+            pct_cancel=("is_canceled", "mean"),
+            adr_mean=("adr", "mean"),
+            num_reserves=("is_canceled", "size"),
+        )
+        .reset_index()
+    )
+
+    bubble_df["pct_cancel"] *= 100
+
+    # Construcció del scatter animat (X = % cancel·lacions, Y = ADR)
+    fig = px.scatter(
+        bubble_df,
+        x="pct_cancel",
+        y="adr_mean",
+        size="num_reserves",
+        color="distribution_channel",
+        animation_frame="month_year",
+        animation_group="distribution_channel",
+        hover_name="distribution_channel",
+        size_max=60,
+        range_x=[0, 100],
+        range_y=[bubble_df["adr_mean"].min() * 0.9, bubble_df["adr_mean"].max() * 1.1],
+        labels={
+            "pct_cancel": "% Cancel·lacions",
+            "adr_mean": "ADR mitjà",
+            "num_reserves": "# reserves",
+            "distribution_channel": "Canal",
+        },
+        title="Evolució de ADR i % cancel·lacions per canal",
+        height=550,
+    )
+    
+    tots_canals = df["distribution_channel"].unique()
+    existents = {trace.name for trace in fig.data}
+    for canal in tots_canals:
+        if canal not in existents:
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None],
+                mode="markers",
+                marker=dict(size=0),
+                name=canal,
+                showlegend=True
+            ))
+
+    fig.update_layout(
+        transition={"duration": 1000},
+        legend_title="Canal",
+    )
+    fig.update_xaxes(tickformat=".0f", ticksuffix="%", title="% Cancel·lacions")
+    fig.update_yaxes(title="ADR mitjà")
+
+    return fig
+
+
+def plot_client_types(df: pd.DataFrame):
     data = df.groupby("customer_type")["is_canceled"].mean().reset_index()
-    fig = px.bar(data, x="customer_type", y="is_canceled",
-                 title="Tipus de client · % cancel·lacions",
-                 labels={"is_canceled":"% cancel·lacions"})
-    fig.update_yaxes(tickformat=".0%")
+    color_map = {
+        "Contract": "#636EFA",         # blau
+        "Group": "#00CC96",            # verd
+        "Transient": "#AB63FA",        # lila
+        "Transient-Party": "#19D3F3",  # turquesa
+    }
+    fig = px.bar(
+        data,
+        x="customer_type",
+        y="is_canceled",
+        color="customer_type",
+        color_discrete_map=color_map,
+        labels={"is_canceled": "% cancel·lacions", "customer_type": "Tipus de client"},
+        title="Percentatge de cancel·lacions per tipus de client",
+        text=data.is_canceled.map(lambda x: f"{x:.1%}"),
+    )
+    fig.update_traces(textposition="outside")
+    fig.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig.update_layout(showlegend=False)
     return fig
 
-def plot_policies(df):
+
+def plot_policies(df: pd.DataFrame):
+    # Paleta comuna
+    color_map_dep = {
+        "No Deposit": "#636EFA",   # blau
+        "Non Refund": "#00CC96",   # verd
+        "Refundable": "#AB63FA",   # lila
+    }
+    color_map_flex = {
+        "Amb canvis": "#636EFA",   # blau
+        "Sense canvis": "#00CC96", # verd
+    }
+
     # Dipòsit
     dep = df.groupby("deposit_type")["is_canceled"].mean().reset_index()
-    fig1 = px.pie(dep, names="deposit_type", values="is_canceled",
-                  title="Política de dipòsit · % cancel·lació", hole=.4)
-    fig1.update_traces(textposition='inside', texttemplate='%{value:.1%}')
+    fig1 = px.bar(
+        dep,
+        x="deposit_type",
+        y="is_canceled",
+        color="deposit_type",
+        color_discrete_map=color_map_dep,
+        labels={"is_canceled": "% cancel·lacions", "deposit_type": "Tipus dipòsit"},
+        title="Percentatge de cancel·lació per política de dipòsit",
+        text=dep.is_canceled.map(lambda x: f"{x:.1%}"),
+    )
+    fig1.update_traces(textposition="outside")
+    fig1.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig1.update_layout(showlegend=False)
 
-    # Flexibilitat (booking_changes>0)
-    flex = df.assign(change = np.where(df.booking_changes>0,"Amb canvis","Sense canvis"))
+    # Flexibilitat (booking_changes > 0)
+    flex = df.assign(change=np.where(df.booking_changes > 0, "Amb canvis", "Sense canvis"))
     flex = flex.groupby("change")["is_canceled"].mean().reset_index()
-    fig2 = px.pie(flex, names="change", values="is_canceled",
-                  title="Flexibilitat · % cancel·lació", hole=.4)
-    fig2.update_traces(textposition='inside', texttemplate='%{value:.1%}')
+    fig2 = px.bar(
+        flex,
+        x="change",
+        y="is_canceled",
+        color="change",
+        color_discrete_map=color_map_flex,
+        labels={"is_canceled": "% cancel·lacions", "change": "Flexibilitat"},
+        title="Percentatge de cancel·lació segons flexibilitat",
+        text=flex.is_canceled.map(lambda x: f"{x:.1%}"),
+    )
+    fig2.update_traces(textposition="outside")
+    fig2.update_yaxes(tickformat=".0%", range=[0, 1])
+    fig2.update_layout(showlegend=False)
+
     return fig1, fig2
 
-def sankey_flow(df):
-    g = (df.groupby(["market_segment","distribution_channel","is_canceled_lbl"])
-            .size().reset_index(name="count"))
+
+def sankey_flow(df: pd.DataFrame):
+    g = (
+        df.groupby(["market_segment", "distribution_channel", "is_canceled_lbl"]).size().reset_index(name="count")
+    )
     src_lv1 = g.market_segment
     trg_lv1 = g.distribution_channel
     src_lv2 = g.distribution_channel
@@ -110,116 +347,80 @@ def sankey_flow(df):
 
     source = pd.concat([src_lv1, src_lv2])
     target = pd.concat([trg_lv1, trg_lv2])
-    value  = pd.concat([g["count"], g["count"]])
+    value = pd.concat([g["count"], g["count"]])
 
     labels = pd.Series(pd.concat([source, target]).unique())
-    src_idx = source.map(lambda x: labels[labels==x].index[0])
-    trg_idx = target.map(lambda x: labels[labels==x].index[0])
+    src_idx = source.map(lambda x: labels[labels == x].index[0])
+    trg_idx = target.map(lambda x: labels[labels == x].index[0])
 
-    fig = go.Figure(go.Sankey(
-        node=dict(label=labels.tolist()),
-        link=dict(source=src_idx, target=trg_idx, value=value)))
+    fig = go.Figure(
+        go.Sankey(
+            node=dict(label=labels.tolist()),
+            link=dict(source=src_idx, target=trg_idx, value=value),
+        )
+    )
     fig.update_layout(title="Flux de reserves")
     return fig
 
-def plot_bubble_anim(df):
-    df = df.copy()
-    df['arrival_date'] = pd.to_datetime(
-        df['arrival_date_year'].astype(str) + '-' +
-        df['arrival_date_month'] + '-' +
-        df['arrival_date_day_of_month'].astype(str)
-    )
-    df['month_year'] = df['arrival_date'].dt.to_period('M').astype(str)
+# ─────────────────────────────────────────────────────────────
+# 4. Layout – Pàgina principal
+# ─────────────────────────────────────────────────────────────
 
-    bubble_df = df.groupby(['month_year', 'distribution_channel', 'hotel']).agg({
-        'is_canceled': 'mean',
-        'lead_time': 'mean',
-        'adr': 'mean',
-        'hotel': 'count'
-    }).rename(columns={'hotel': 'num_reserves'}).reset_index()
+st.title("Dashboard Storytelling (PAC 3): Cancel·lacions Hoteleres")
 
-    bubble_df['is_canceled'] *= 100
-
-    fig = px.scatter(
-        bubble_df,
-        x='is_canceled',
-        y='lead_time',
-        size='num_reserves',
-        color='hotel',
-        animation_frame='month_year',
-        animation_group='distribution_channel',
-        hover_name='distribution_channel',
-        size_max=60,
-        range_x=[0, bubble_df['is_canceled'].max() + 5],
-        range_y=[0, bubble_df['lead_time'].max() + 20],
-        labels={
-            'is_canceled': '% Cancel·lació',
-            'lead_time': 'Lead time mitjà (dies)',
-            'num_reserves': 'Nombre de reserves',
-            'hotel': "Tipus d'hotel"
-        },
-        title='Evolució de Cancel·lacions per Canal al llarg del Temps (Bubble Chart)'
-    )
-
-    fig.update_layout(
-        transition={'duration': 1000},
-        legend_title="Tipus d'Hotel"
-    )
-    return fig
-
-
-# ── 3. Interfície Streamlit (amb pestanyes) ─────────────────
-st.title("Dashboard Storytelling · Cancel·lacions Hotel·leres (PAC3)")
 tabs = st.tabs([
-    "Plantejament", "Temporalitat", "Lead Time", "Canals",
-    "Clientela", "Polítiques", "Flux", "Evolució Bombolles", "Recomanacions"
+    "Plantejament",
+    "Evolució cancel·lacions",
+    "Temporalitat",
+    "Lead Time",
+    "ADR i volum",
+    "Tipus de client",
+    "Polítiques",
+    "Flux de reserves",
+    "Recomanacions"
 ])
 
 with tabs[0]:
-    st.subheader("Plantejament del problema")
-    st.plotly_chart(plot_problem(df), use_container_width=True)
+    st.header("Plantejament del problema")
+    st.plotly_chart(plot_problem(df_filt), use_container_width=True)
 
 with tabs[1]:
-    st.subheader("Temporalitat de les cancel·lacions")
-    st.plotly_chart(plot_temporal(df), use_container_width=True)
+    st.header("Evolució de cancel·lacions per canal")
+    st.plotly_chart(plot_bubble_anim(df_filt), use_container_width=True)
 
 with tabs[2]:
-    st.subheader("Lead Time vs Cancel·lació")
-    st.plotly_chart(plot_lead_time(df), use_container_width=True)
+    st.header("Temporalitat de les cancel·lacions")
+    st.plotly_chart(plot_temporal_heatmap(df_filt), use_container_width=True)
 
 with tabs[3]:
-    st.subheader("Canals de reserva")
-    st.plotly_chart(plot_channels(df), use_container_width=True)
+    st.header("Dies d'anticipació de la reserva (Lead Time) i cancel·lacions")
+    st.plotly_chart(plot_lead_time_hist(df_filt), use_container_width=True)
 
 with tabs[4]:
-    st.subheader("Tipus de client")
-    st.plotly_chart(plot_client_types(df), use_container_width=True)
+    st.header("Evolució ADR i % cancel·lacions per canal")
+    st.plotly_chart(plot_channel_evol(df_filt), use_container_width=True)
 
 with tabs[5]:
-    st.subheader("Polítiques i flexibilitat")
-    col1, col2 = st.columns(2)
-    fig1, fig2 = plot_policies(df)
-    with col1:
-        st.plotly_chart(fig1, use_container_width=True)
-    with col2:
-        st.plotly_chart(fig2, use_container_width=True)
+    st.header("Tipus de client: % cancel·lacions")
+    st.plotly_chart(plot_client_types(df_filt), use_container_width=True)
 
 with tabs[6]:
-    st.subheader("Flux de reserves (Sankey)")
-    st.plotly_chart(sankey_flow(df), use_container_width=True)
+    st.header("Polítiques de reserva")
+    fig_dep, fig_flex = plot_policies(df_filt)
+    col1, col2 = st.columns(2)
+    col1.plotly_chart(fig_dep, use_container_width=True)
+    col2.plotly_chart(fig_flex, use_container_width=True)
 
-with tabs[7]:  # o el número que correspongui
-    st.subheader("Evolució de Cancel·lacions per Canal al llarg del Temps (Bubble Chart)")
-    st.plotly_chart(plot_bubble_anim(df), use_container_width=True)
+with tabs[7]:
+    st.header("Flux de reserves (Sankey)")
+    st.plotly_chart(sankey_flow(df_filt), use_container_width=True)
 
 with tabs[8]:
-    st.subheader("Recomanacions finals")
+    st.header("Recomanacions finals")
     st.markdown("""
-    - 💳 **Implantar dipòsits als segments de risc.**
-    - 🔄 **Oferir canvis flexibles per reduir cancel·lacions.**
-    - 🌐 **Potenciar canals directes amb incentius.**
-    - 📈 **Overbooking calculat a temporada alta.**
-    """)
-
-st.markdown("---")
-st.caption("Autor: Jordi Almiñana Domènech | PAC3 · UOC · 2025")
+- 💳 **Implantar dipòsits** als segments de risc.
+- 🔄 **Oferir canvis flexibles** per reduir cancel·lacions.
+- 🌐 **Potenciar canals directes** amb incentius.
+- 📈 **Overbooking calculat** a temporada alta.
+""")
+    st.caption("Autor: Jordi Almiñana Domènech | UOC · Visualització de Dades · PAC3 · 2025")
