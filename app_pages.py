@@ -215,8 +215,6 @@ def plot_channel_evol(df: pd.DataFrame):
         )
         .reset_index()
     )
-    # % de cancel·lacions en valor percentual
-    bubble_df["pct_cancel"] = bubble_df["pct_cancel"] * 100
 
     # Construcció del scatter animat amb eixos girats (X = % cancel·lacions, Y = ADR)
     fig = px.scatter(
