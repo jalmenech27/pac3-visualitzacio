@@ -119,8 +119,8 @@ def plot_bubble_anim(df: pd.DataFrame):
             "hotel": "Tipus d'hotel",
         },
         title="Evolució de cancel·lacions per canal al llarg del temps",
-        height=550,
-        weight=750,
+        width=850,
+        height=550,        
     )
 
     fig.update_layout(transition={"duration": 1000}, legend_title="Tipus d'hotel")
@@ -240,8 +240,8 @@ def plot_channel_evol(df: pd.DataFrame):
             "distribution_channel": "Canal",
         },
         title="Evolució de ADR i % cancel·lacions per canal",
+        width=850,
         height=550,
-        weight=750,
     )
     
     tots_canals = df["distribution_channel"].unique()
