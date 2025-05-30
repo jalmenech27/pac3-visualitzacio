@@ -200,32 +200,55 @@ def plot_lead_time_hist(df: pd.DataFrame):
     return fig
 
 
-def plot_channels(df: pd.DataFrame):
-    data = (
-        df.groupby("distribution_channel")
+def plot_channel_evol(df: pd.DataFrame):
+    # Preparem les dades amb evolució temporal per mes
+    df_tmp = df.copy()
+    df_tmp["month_year"] = df_tmp["arrival_date"].dt.to_period("M").astype(str)
+
+    bubble_df = (
+        df_tmp
+        .groupby(["month_year", "distribution_channel"])
         .agg(
             pct_cancel=("is_canceled", "mean"),
             adr_mean=("adr", "mean"),
-            n=("is_canceled", "size"),
+            num_reserves=("is_canceled", "size"),
         )
         .reset_index()
     )
+    # % de cancel·lacions en valor percentual
+    bubble_df["pct_cancel"] = bubble_df["pct_cancel"] * 100
 
+    # Construcció del scatter animat amb eixos girats (X = % cancel·lacions, Y = ADR)
     fig = px.scatter(
-        data,
-        x="adr_mean",
-        y="pct_cancel",
-        size="n",
+        bubble_df,
+        x="pct_cancel",
+        y="adr_mean",
+        size="num_reserves",
         color="distribution_channel",
+        animation_frame="month_year",
+        animation_group="distribution_channel",
+        hover_name="distribution_channel",
+        size_max=60,
+        range_x=[0, 100],
+        range_y=[bubble_df["adr_mean"].min() * 0.9, bubble_df["adr_mean"].max() * 1.1],
         labels={
+            "pct_cancel": "% Cancel·lacions",
             "adr_mean": "ADR mitjà",
-            "pct_cancel": "% cancel·lacions",
+            "num_reserves": "# reserves",
             "distribution_channel": "Canal",
         },
-        title="Canals de reserva · ADR, volum i % cancel·lació",
+        title="Evolució de ADR i % cancel·lacions per canal",
+        height=550,
     )
-    fig.update_yaxes(tickformat=".0%")
+
+    fig.update_layout(
+        transition={"duration": 1000},
+        legend_title="Canal",
+    )
+    fig.update_xaxes(tickformat=".0%", title="% Cancel·lacions")
+    fig.update_yaxes(title="ADR mitjà")
     return fig
+
 
 
 def plot_client_types(df: pd.DataFrame):
@@ -359,7 +382,7 @@ st.markdown("---")
 
 # 4.5 Canals de reserva
 st.header("Canals de reserva: ADR i volum")
-st.plotly_chart(plot_channels(df_filt), use_container_width=True)
+st.plotly_chart(plot_channel_evol(df_filt), use_container_width=True)
 
 st.markdown("---")
 
