@@ -307,15 +307,68 @@ def sankey_flow(df: pd.DataFrame):
 # 4. Layout – Pàgina principal
 # ─────────────────────────────────────────────────────────────
 
-st.title("Dashboard Storytelling · Cancel·lacions Hotel·leres (PAC3)")
+st.title("Dashboard Storytelling · Cancel·lacions Hoteleres (PAC3)")
 
 # 4.1 Plantejament
 st.header("Plantejament del problema")
 st.plotly_chart(plot_problem(df_filt), use_container_width=True)
 
-# 4.2 Bubble chart d'evolució per canal\	st.header("Evolució de cancel·lacions per canal")
-st.plotly_chart(plot_bubble	anim(df_filt), use_container_width=True)
+st.markdown("---")
+
+# 4.2 Evolució de cancel·lacions per canal (Bubble)
+st.header("Evolució de cancel·lacions per canal")
+st.plotly_chart(plot_bubble_anim(df_filt), use_container_width=True)
+
+st.markdown("---")
 
 # 4.3 Temporalitat
 st.header("Temporalitat de les cancel·lacions")
-st.plotly_chart(plot_temporal_heatmap(df
+st.plotly_chart(plot_temporal_heatmap(df_filt), use_container_width=True)
+
+st.markdown("---")
+
+# 4.4 Lead Time\ nst.header("Lead Time i cancel·lacions")
+st.plotly_chart(plot_lead_time_hist(df_filt), use_container_width=True)
+
+st.markdown("---")
+
+# 4.5 Canals de reserva
+st.header("Canals de reserva: ADR i volum")
+st.plotly_chart(plot_channels(df_filt), use_container_width=True)
+
+st.markdown("---")
+
+# 4.6 Tipus de client
+st.header("Tipus de client")
+st.plotly_chart(plot_client_types(df_filt), use_container_width=True)
+
+st.markdown("---")
+
+# 4.7 Polítiques de reserva
+st.header("Polítiques de reserva")
+fig_dep, fig_flex = plot_policies(df_filt)
+col1, col2 = st.columns(2)
+col1.plotly_chart(fig_dep, use_container_width=True)
+col2.plotly_chart(fig_flex, use_container_width=True)
+
+st.markdown("---")
+
+# 4.8 Flux de reserves (Sankey)
+st.header("Flux de reserves")
+st.plotly_chart(sankey_flow(df_filt), use_container_width=True)
+
+st.markdown("---")
+
+# 4.9 Recomanacions finals
+st.header("Recomanacions finals")
+st.markdown(
+    """
+- 💳 **Implantar dipòsits** als segments de risc.
+- 🔄 **Oferir canvis flexibles** per reduir cancel·lacions.
+- 🌐 **Potenciar canals directes** amb incentius.
+- 📈 **Overbooking calculat** a temporada alta.
+"""
+)
+
+st.caption("Autor: Jordi Almiñana Domènech · UOC · Visualització de Dades · PAC3 · 2025")
+
