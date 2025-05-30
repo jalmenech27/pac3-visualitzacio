@@ -135,23 +135,19 @@ def plot_temporal_heatmap(df: pd.DataFrame):
 
     # ordenar mesos
     months_order = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec",
     ]
     data["Month"] = pd.Categorical(data["Month"], categories=months_order, ordered=True)
     data = data.sort_values(["Month", "Year"])
 
-    heat_df = data.pivot("Month", "Year", "pct")
+    # USAR pivot_table en comptes de pivot
+    heat_df = data.pivot_table(
+        index="Month",
+        columns="Year",
+        values="pct",
+        aggfunc="mean"
+    )
 
     fig = px.imshow(
         heat_df,
@@ -327,7 +323,8 @@ st.plotly_chart(plot_temporal_heatmap(df_filt), use_container_width=True)
 
 st.markdown("---")
 
-# 4.4 Lead Time\ nst.header("Lead Time i cancel·lacions")
+# 4.4 Lead Time
+st.header("Lead Time i cancel·lacions")
 st.plotly_chart(plot_lead_time_hist(df_filt), use_container_width=True)
 
 st.markdown("---")
