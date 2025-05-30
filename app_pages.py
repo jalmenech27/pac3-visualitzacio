@@ -218,7 +218,7 @@ def plot_channel_evol(df: pd.DataFrame):
 
     bubble_df["pct_cancel"] *= 100
 
-    # Construcció del scatter animat amb eixos girats (X = % cancel·lacions, Y = ADR)
+    # Construcció del scatter animat (X = % cancel·lacions, Y = ADR)
     fig = px.scatter(
         bubble_df,
         x="pct_cancel",
@@ -245,8 +245,9 @@ def plot_channel_evol(df: pd.DataFrame):
         transition={"duration": 1000},
         legend_title="Canal",
     )
-    fig.update_xaxes(tickformat=".0%", title="% Cancel·lacions")
+    fig.update_xaxes(tickformat=".0f", ticksuffix="%", title="% Cancel·lacions")
     fig.update_yaxes(title="ADR mitjà")
+
     return fig
 
 
